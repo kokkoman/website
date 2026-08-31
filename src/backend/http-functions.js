@@ -60,6 +60,11 @@ function flattenPayload(payload) {
   }, {});
 
   const result = {};
+  const addField = (key, value) => {
+    if (!key || value === null || value === undefined) return;
+    const text = Array.isArray(value) ? value.join(', ') : String(value).trim();
+    if (text) result[String(key).trim()] = text;
+  };
   const walk = (value, path = []) => {
     if (value === null || value === undefined) return;
     if (Array.isArray(value)) {
@@ -67,12 +72,15 @@ function flattenPayload(payload) {
       return;
     }
     if (typeof value === 'object') {
+      const label = value.label || value.fieldLabel || value.fieldName || value.name || value.title;
+      const fieldValue = value.value ?? value.fieldValue ?? value.answer ?? value.textValue;
+      if (label && fieldValue !== undefined && typeof fieldValue !== 'object') addField(label, fieldValue);
       Object.entries(value).forEach(([key, item]) => walk(item, [...path, key]));
       return;
     }
     const key = path.filter((part) => !/^\\d+$/.test(part)).pop();
     const text = String(value).trim();
-    if (key && text) result[key] = text;
+    if (key && text) addField(key, text);
   };
   walk(payload);
   return result;
@@ -87,15 +95,23 @@ function buildChatworkMessage(fields) {
   if (!Object.keys(fields).length) return '';
 
   const name = findValue(fields, ['氏名', 'お名前', '名前', 'name']);
+  const email = findValue(fields, ['メールアドレス', 'メール', 'email', 'e-mail']);
   const phone = findValue(fields, ['電話', 'TEL', 'tel', 'phone']);
   const address = findValue(fields, ['住所', 'address']);
+  const manufacturer = findValue(fields, ['メーカー', '製造元', 'manufacturer', 'brand']);
+  const model = findValue(fields, ['機種名', '品番', '型番', 'model', 'product']);
+  const considering = findValue(fields, ['検討機種', '交換を検討', '検討', 'consider']);
   const inquiry = findValue(fields, ['問い合わせ', 'お問合せ', '内容', 'message']);
 
   return [
     '[info][title]【要確認】Wixフォームから新規お問い合わせ[/title]',
     `氏名：${name}`,
+    `メールアドレス：${email}`,
     `電話番号：${phone}`,
     `住所：${address}`,
+    `メーカー：${manufacturer}`,
+    `機種名・品番：${model}`,
+    `検討機種：${considering}`,
     `お問い合わせ内容：${inquiry}`,
     '受付経路：Wix',
     '[/info]',
