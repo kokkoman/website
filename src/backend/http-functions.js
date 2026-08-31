@@ -50,11 +50,25 @@ function flattenPayload(payload) {
       ? payload.formSubmission.fields
       : [];
 
+  const extractText = (value) => {
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.map(extractText).filter(Boolean).join(', ');
+    if (typeof value !== 'object') return String(value).trim();
+    const preferredKeys = ['stringValue', 'textValue', 'formattedValue', 'value', 'answer', 'fieldValue'];
+    for (const key of preferredKeys) {
+      const text = extractText(value[key]);
+      if (text) return text;
+    }
+    return Object.entries(value)
+      .filter(([key]) => !['label', 'fieldLabel', 'fieldName', 'name', 'title', 'fieldId', 'id'].includes(key))
+      .map(([, item]) => extractText(item))
+      .filter(Boolean)
+      .join(', ');
+  };
+
   if (entries.length) return entries.reduce((result, field) => {
     const key = String(field?.label || field?.key || field?.fieldName || '').trim();
-    const value = Array.isArray(field?.value)
-      ? field.value.join(', ')
-      : String(field?.value ?? field?.textValue ?? '').trim();
+    const value = extractText(field?.value ?? field?.fieldValue ?? field?.answer ?? field?.textValue);
     if (key && value) result[key] = value;
     return result;
   }, {});
