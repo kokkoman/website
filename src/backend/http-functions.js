@@ -50,7 +50,7 @@ function flattenPayload(payload) {
       ? payload.formSubmission.fields
       : [];
 
-  return entries.reduce((result, field) => {
+  if (entries.length) return entries.reduce((result, field) => {
     const key = String(field?.label || field?.key || field?.fieldName || '').trim();
     const value = Array.isArray(field?.value)
       ? field.value.join(', ')
@@ -58,6 +58,24 @@ function flattenPayload(payload) {
     if (key && value) result[key] = value;
     return result;
   }, {});
+
+  const result = {};
+  const walk = (value, path = []) => {
+    if (value === null || value === undefined) return;
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => walk(item, [...path, String(index)]));
+      return;
+    }
+    if (typeof value === 'object') {
+      Object.entries(value).forEach(([key, item]) => walk(item, [...path, key]));
+      return;
+    }
+    const key = path.filter((part) => !/^\\d+$/.test(part)).pop();
+    const text = String(value).trim();
+    if (key && text) result[key] = text;
+  };
+  walk(payload);
+  return result;
 }
 
 function findValue(fields, candidates) {
