@@ -91,12 +91,22 @@ function findValue(fields, candidates) {
   return key ? fields[key] : '未入力';
 }
 
+function formatJapanesePhone(value) {
+  if (!value || value === '未入力') return value;
+  let digits = String(value).replace(/[^0-9]/g, '');
+  if (digits.startsWith('81')) digits = `0${digits.slice(2)}`;
+  if (digits.length === 11 && /^0[789]0/.test(digits)) {
+    return digits.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
+  }
+  return value;
+}
+
 function buildChatworkMessage(fields) {
   if (!Object.keys(fields).length) return '';
 
   const name = findValue(fields, ['氏名', 'お名前', '名前', 'name']);
   const email = findValue(fields, ['メールアドレス', 'メール', 'email', 'e-mail']);
-  const phone = findValue(fields, ['電話', 'TEL', 'tel', 'phone']);
+  const phone = formatJapanesePhone(findValue(fields, ['電話', 'TEL', 'tel', 'phone']));
   const address = findValue(fields, ['住所', 'address']);
   const manufacturer = findValue(fields, ['メーカー', '製造元', 'manufacturer', 'brand']);
   const model = findValue(fields, ['機種名', '品番', '型番', 'model', 'product']);
