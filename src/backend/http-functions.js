@@ -91,6 +91,15 @@ function findValue(fields, candidates) {
   return key ? fields[key] : '未入力';
 }
 
+function findExistingModel(fields) {
+  const candidate = findValue(fields, ['品番', '型番', '機種名', 'model', 'product']);
+  if (candidate !== '未入力' && /^[A-Za-z]{1,6}-[A-Za-z0-9○〇-]+$/.test(candidate.replace(/\s/g, ''))) {
+    return candidate;
+  }
+  const model = Object.values(fields).find((value) => /^[A-Za-z]{1,6}-[A-Za-z0-9○〇-]+$/.test(String(value).replace(/\s/g, '')));
+  return model || candidate;
+}
+
 function formatJapanesePhone(value) {
   if (!value || value === '未入力') return value;
   const international = String(value).trim().match(/^\+81[\s-]*(\d{1,4})[\s-]+(\d{1,4})[\s-]+(\d{4})$/);
@@ -111,9 +120,8 @@ function buildChatworkMessage(fields) {
   const phone = formatJapanesePhone(findValue(fields, ['電話', 'TEL', 'tel', 'phone']));
   const address = findValue(fields, ['住所', 'address']);
   const manufacturer = findValue(fields, ['メーカー', '製造元', 'manufacturer', 'brand']);
-  const model = findValue(fields, ['品番', '型番', '機種名', 'model', 'product']);
+  const model = findExistingModel(fields);
   const considering = findValue(fields, ['検討機種', '交換を検討', '検討', 'consider']);
-  const inquiry = findValue(fields, ['問い合わせ', 'お問合せ', '内容', 'message']);
 
   return [
     '[info][title]【要確認】Wixフォームから新規お問い合わせ[/title]',
@@ -124,8 +132,6 @@ function buildChatworkMessage(fields) {
     `既存機種メーカー：${manufacturer}`,
     `既存機種品番：${model}`,
     `検討機種：${considering}`,
-    `お問い合わせ内容：${inquiry === considering ? '未入力' : inquiry}`,
-    '受付経路：Wix',
     '[/info]',
   ].join('\n');
 }
