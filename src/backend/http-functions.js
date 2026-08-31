@@ -93,6 +93,8 @@ function findValue(fields, candidates) {
 
 function formatJapanesePhone(value) {
   if (!value || value === '未入力') return value;
+  const international = String(value).trim().match(/^\+81[\s-]*(\d{1,4})[\s-]+(\d{1,4})[\s-]+(\d{4})$/);
+  if (international) return `0${international[1]}-${international[2]}-${international[3]}`;
   let digits = String(value).replace(/[^0-9]/g, '');
   if (digits.startsWith('81')) digits = `0${digits.slice(2)}`;
   if (digits.length === 11 && /^0[789]0/.test(digits)) {
@@ -119,10 +121,10 @@ function buildChatworkMessage(fields) {
     `メールアドレス：${email}`,
     `電話番号：${phone}`,
     `住所：${address}`,
-    `メーカー：${manufacturer}`,
-    `機種名・品番：${model}`,
+    `既存機種メーカー：${manufacturer}`,
+    `既存機種品番：${model}`,
     `検討機種：${considering}`,
-    `お問い合わせ内容：${inquiry}`,
+    `お問い合わせ内容：${inquiry === considering ? '未入力' : inquiry}`,
     '受付経路：Wix',
     '[/info]',
   ].join('\n');
