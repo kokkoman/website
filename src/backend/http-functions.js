@@ -111,7 +111,7 @@ function buildChatworkMessage(fields) {
   const phone = formatJapanesePhone(findValue(fields, ['電話', 'TEL', 'tel', 'phone']));
   const address = findValue(fields, ['住所', 'address']);
   const manufacturer = findValue(fields, ['メーカー', '製造元', 'manufacturer', 'brand']);
-  const model = findValue(fields, ['機種名', '品番', '型番', 'model', 'product']);
+  const model = findValue(fields, ['品番', '型番', '機種名', 'model', 'product']);
   const considering = findValue(fields, ['検討機種', '交換を検討', '検討', 'consider']);
   const inquiry = findValue(fields, ['問い合わせ', 'お問合せ', '内容', 'message']);
 
