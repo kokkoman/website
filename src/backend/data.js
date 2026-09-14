@@ -10,7 +10,6 @@ import wixData from 'wix-data';
  * collection. When an item is unpublished or removed from the source
  * collection, the matching public item is removed as well.
  */
-const SOURCE_COLLECTION = 'EcoCuteCases';
 const PUBLIC_COLLECTION = 'EcoCuteCasesPublic';
 
 const PUBLIC_FIELDS = [
@@ -78,21 +77,17 @@ async function syncSourceItemToPublic(item) {
   }
 }
 
-export async function EcoCuteCases_afterInsert(item, context) {
+export async function EcoCuteCases_afterInsert(item) {
   await syncSourceItemToPublic(item);
   return item;
 }
 
-export async function EcoCuteCases_afterUpdate(item, context) {
+export async function EcoCuteCases_afterUpdate(item) {
   await syncSourceItemToPublic(item);
   return item;
 }
 
-export async function EcoCuteCases_afterRemove(item, context) {
+export async function EcoCuteCases_afterRemove(item) {
   await removePublicItem(item._id);
   return item;
 }
-
-// Keep the source collection name referenced explicitly so accidental renames
-// are easier to spot during maintenance.
-void SOURCE_COLLECTION;
