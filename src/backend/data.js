@@ -6,9 +6,10 @@ import wixData from 'wix-data';
  * Single Source of Truth: EcoCuteCases
  * Public-facing projection: EcoCuteCasesPublic
  *
- * Only fields explicitly listed in PUBLIC_FIELDS are copied to the public
- * collection. When an item is unpublished or removed from the source
- * collection, the matching public item is removed as well.
+ * Existing public image URLs are intentionally preserved because the public
+ * collection may contain optimized/canonical media variants. Other public
+ * fields follow the source item. When an item is unpublished or removed from
+ * the source collection, the matching public item is removed as well.
  */
 const PUBLIC_COLLECTION = 'EcoCuteCasesPublic';
 
@@ -29,6 +30,11 @@ const PUBLIC_FIELDS = [
   'beforeImageUrl',
   'afterImageUrl'
 ];
+
+const PRESERVE_EXISTING_FIELDS = new Set([
+  'beforeImageUrl',
+  'afterImageUrl'
+]);
 
 function isPresent(value) {
   return value !== undefined && value !== null && value !== '';
@@ -72,21 +78,37 @@ function buildFallbackConstructionComment(item) {
   return `<p>${escapeHtml(parts.join(''))}</p>`;
 }
 
-function toPublicItem(item) {
-  const publicItem = { _id: item._id };
+function buildPublicItem(sourceItem, existingPublicItem) {
+  const publicItem = existingPublicItem
+    ? { ...existingPublicItem, _id: sourceItem._id }
+    : { _id: sourceItem._id };
 
   PUBLIC_FIELDS.forEach((field) => {
-    const value = item[field];
+    if (existingPublicItem && PRESERVE_EXISTING_FIELDS.has(field)) return;
+
+    const value = sourceItem[field];
     if (isPresent(value)) {
       publicItem[field] = value;
+    } else {
+      delete publicItem[field];
     }
   });
 
-  if (!isPresent(publicItem.constructionComment)) {
-    publicItem.constructionComment = buildFallbackConstructionComment(item);
+  if (!isPresent(sourceItem.constructionComment)) {
+    publicItem.constructionComment = buildFallbackConstructionComment(sourceItem);
   }
 
   return publicItem;
+}
+
+async function findPublicItem(itemId) {
+  const result = await wixData
+    .query(PUBLIC_COLLECTION)
+    .eq('_id', itemId)
+    .limit(1)
+    .find({ suppressAuth: true });
+
+  return result.items[0] || null;
 }
 
 async function removePublicItem(itemId) {
@@ -110,7 +132,10 @@ async function syncSourceItemToPublic(item) {
 
   try {
     if (item.published === true) {
-      await wixData.save(PUBLIC_COLLECTION, toPublicItem(item), {
+      const existingPublicItem = await findPublicItem(item._id);
+      const publicItem = buildPublicItem(item, existingPublicItem);
+
+      await wixData.save(PUBLIC_COLLECTION, publicItem, {
         suppressAuth: true,
         suppressHooks: true
       });
