@@ -30,15 +30,61 @@ const PUBLIC_FIELDS = [
   'afterImageUrl'
 ];
 
+function isPresent(value) {
+  return value !== undefined && value !== null && value !== '';
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatDate(value) {
+  if (!isPresent(value)) return '';
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+function buildFallbackConstructionComment(item) {
+  const location = [item.city, item.area].filter(isPresent).join('');
+  const before = [item.beforeManufacturer, item.beforeModel].filter(isPresent).join(' ');
+  const after = [item.afterManufacturer, item.afterModel].filter(isPresent).join(' ');
+  const date = formatDate(item.constructionDate);
+
+  const parts = [];
+  if (location) parts.push(`${location}で`);
+  if (before && after) {
+    parts.push(`${before}から${after}へエコキュートを交換した施工記録です。`);
+  } else if (after) {
+    parts.push(`${after}を設置した施工記録です。`);
+  } else {
+    parts.push('エコキュートの施工記録です。');
+  }
+  if (date) parts.push(`施工日は${date}です。`);
+
+  return `<p>${escapeHtml(parts.join(''))}</p>`;
+}
+
 function toPublicItem(item) {
   const publicItem = { _id: item._id };
 
   PUBLIC_FIELDS.forEach((field) => {
     const value = item[field];
-    if (value !== undefined && value !== null && value !== '') {
+    if (isPresent(value)) {
       publicItem[field] = value;
     }
   });
+
+  if (!isPresent(publicItem.constructionComment)) {
+    publicItem.constructionComment = buildFallbackConstructionComment(item);
+  }
 
   return publicItem;
 }
