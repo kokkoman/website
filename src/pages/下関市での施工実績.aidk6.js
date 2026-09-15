@@ -3,14 +3,25 @@ import wixData from 'wix-data';
 // Public, city-specific projection managed by the existing CMS workflow.
 // Querying this view prevents unpublished source records from appearing here.
 const SHIMONOSEKI_CASES_COLLECTION = 'ickkr9fygsfo792a91dl7vmz1d';
-const ARCHIVE_HEIGHT = 3000;
+const ARCHIVE_MIN_HEIGHT = 860;
+const ARCHIVE_MAX_HEIGHT = 16000;
 
 $w.onReady(async function () {
-  $w('#html1').height = ARCHIVE_HEIGHT;
+  $w('#html1').height = ARCHIVE_MIN_HEIGHT;
   const heroImageSrc = $w('#image143').src;
   $w('#image143').collapse();
 
   $w('#html1').onMessage((event) => {
+    if (event.data?.type === 'shimonosekiArchiveHeight') {
+      const measuredHeight = Number(event.data.height);
+      if (Number.isFinite(measuredHeight)) {
+        $w('#html1').height = Math.min(
+          ARCHIVE_MAX_HEIGHT,
+          Math.max(ARCHIVE_MIN_HEIGHT, Math.ceil(measuredHeight) + 8)
+        );
+      }
+    }
+
     if (event.data?.type === 'shimonosekiReady') {
       $w('#html1').postMessage({ type: 'heroImage', src: heroImageSrc });
       loadCases();
