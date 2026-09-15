@@ -28,13 +28,40 @@ async function loadCases() {
       .limit(100)
       .find();
 
-    console.log('[Shimonoseki case archive] field keys', Object.keys(result.items[0] || {}));
-
     $w('#html1').postMessage({
       type: 'shimonosekiCases',
-      items: result.items.slice(0, 1).map((item) => ({ title: JSON.stringify(item) }))
+      items: result.items.map(toArchiveCase)
     });
   } catch (error) {
     console.error('[Shimonoseki case archive] CMS load failed', error);
   }
+}
+
+function toArchiveCase(item) {
+  const values = Object.values(item);
+  const textValues = values.filter((value) => typeof value === 'string');
+  const imageValues = values.filter((value) => {
+    const source = typeof value === 'string' ? value : value?.src;
+    return typeof source === 'string' && source.startsWith('wix:image://');
+  });
+  const title = textValues.find((value) => value.includes('｜') && value.includes('エコキュート'))
+    || textValues.find((value) => value.includes('エコキュート'))
+    || '下関市 エコキュート施工実績';
+  const body = textValues.find((value) => value.includes('にて') && value.length > 40)
+    || textValues.find((value) => value.length > 40)
+    || '';
+
+  return {
+    title,
+    mainText: body,
+    area: title.match(/^下関市[^｜｜]+/)?.[0] || '下関市',
+    beforeImage: wixImageUrl(imageValues[0]),
+    afterImage: wixImageUrl(imageValues[1])
+  };
+}
+
+function wixImageUrl(value) {
+  const source = typeof value === 'string' ? value : value?.src || '';
+  const match = source.match(/^wix:image:\/\/v1\/([^/]+)/);
+  return match ? `https://static.wixstatic.com/media/${match[1]}` : '';
 }
