@@ -1,13 +1,17 @@
 import wixData from 'wix-data';
+import { formFactor } from 'wix-window-frontend';
 
 // Public, city-specific projection managed by the existing CMS workflow.
 // Querying this view prevents unpublished source records from appearing here.
 const SHIMONOSEKI_CASES_COLLECTION = 'ickkr9fygsfo792a91dl7vmz1d';
 const ARCHIVE_MIN_HEIGHT = 860;
 const ARCHIVE_MAX_HEIGHT = 16000;
+// The HTML component's saved document is intentionally independent of the
+// page code. Reserve enough room even before it reports its rendered height.
+const ARCHIVE_FALLBACK_HEIGHT = formFactor === 'Mobile' ? 13000 : 6200;
 
 $w.onReady(async function () {
-  $w('#html1').height = ARCHIVE_MIN_HEIGHT;
+  $w('#html1').height = ARCHIVE_FALLBACK_HEIGHT;
   const heroImageSrc = $w('#image143').src;
   $w('#image143').collapse();
 
