@@ -32,7 +32,7 @@ async function loadCases() {
 
     $w('#html1').postMessage({
       type: 'shimonosekiCases',
-      items: result.items
+      items: result.items.slice(0, 1).map((item) => ({ title: JSON.stringify(item) }))
     });
   } catch (error) {
     console.error('[Shimonoseki case archive] CMS load failed', error);
