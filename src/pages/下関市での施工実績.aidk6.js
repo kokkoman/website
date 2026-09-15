@@ -28,6 +28,8 @@ async function loadCases() {
       .limit(100)
       .find();
 
+    console.log('[Shimonoseki case archive] field keys', Object.keys(result.items[0] || {}));
+
     $w('#html1').postMessage({
       type: 'shimonosekiCases',
       items: result.items
