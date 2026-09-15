@@ -1,81 +1,11 @@
-import wixData from 'wix-data';
+$w.onReady(function () {
+  // Emergency rollback: disable the custom HTML archive iframe until the
+  // embedded document can autosize reliably. The iframe was trapping scroll
+  // inside a small viewport and breaking the page layout.
+  $w('#html1').collapse();
 
-// Public, city-specific projection managed by the existing CMS workflow.
-// Querying this view prevents unpublished source records from appearing here.
-const SHIMONOSEKI_CASES_COLLECTION = 'ickkr9fygsfo792a91dl7vmz1d';
-const ARCHIVE_MIN_HEIGHT = 860;
-const ARCHIVE_MAX_HEIGHT = 16000;
-
-$w.onReady(async function () {
-  // Keep the embed compact until its own document reports the rendered height.
-  // A large fixed fallback creates a multi-thousand-pixel blank area whenever
-  // the height message is delayed or missed.
-  $w('#html1').height = ARCHIVE_MIN_HEIGHT;
-  const heroImageSrc = $w('#image143').src;
-  $w('#image143').collapse();
-
-  $w('#html1').onMessage((event) => {
-    if (event.data?.type === 'shimonosekiArchiveHeight') {
-      const measuredHeight = Number(event.data.height);
-      if (Number.isFinite(measuredHeight)) {
-        $w('#html1').height = Math.min(
-          ARCHIVE_MAX_HEIGHT,
-          Math.max(ARCHIVE_MIN_HEIGHT, Math.ceil(measuredHeight) + 8)
-        );
-      }
-    }
-
-    if (event.data?.type === 'shimonosekiReady') {
-      $w('#html1').postMessage({ type: 'heroImage', src: heroImageSrc });
-      loadCases();
-    }
-  });
-
-  await loadCases();
+  // Restore the original Wix-native hero/content that existed before the
+  // custom archive replacement. Native Wix sections remain in the normal page
+  // flow and use the site's existing desktop/mobile layouts.
+  $w('#image143').expand();
 });
-
-async function loadCases() {
-  try {
-    const result = await wixData
-      .query(SHIMONOSEKI_CASES_COLLECTION)
-      .descending('_createdDate')
-      .limit(100)
-      .find();
-
-    $w('#html1').postMessage({
-      type: 'shimonosekiCases',
-      items: result.items.map(toArchiveCase)
-    });
-  } catch (error) {
-    console.error('[Shimonoseki case archive] CMS load failed', error);
-  }
-}
-
-function toArchiveCase(item) {
-  const values = Object.values(item);
-  const textValues = values.filter((value) => typeof value === 'string');
-  const imageValues = values.filter((value) => {
-    const source = typeof value === 'string' ? value : value?.src;
-    return typeof source === 'string' && source.startsWith('wix:image://');
-  });
-  const title = textValues.find((value) => value.includes('｜') && value.includes('エコキュート'))
-    || textValues.find((value) => value.includes('エコキュート'))
-    || '下関市 エコキュート施工実績';
-  const body = textValues.find((value) => value.includes('にて') && value.length > 40)
-    || textValues.find((value) => value.length > 40)
-    || '';
-
-  return {
-    title,
-    mainText: body,
-    area: title.match(/^下関市[^｜｜]+/)?.[0] || '下関市',
-    beforeImage: wixImageUrl(imageValues[0]),
-    afterImage: wixImageUrl(imageValues[1])
-  };
-}
-
-function wixImageUrl(value) {
-  const source = typeof value === 'string' ? value : value?.src || '';
-  const match = source.match(/^wix:image:\/\/v1\/([^/]+)/);
-  return match ? `https://static.wixstatic.com/media/${match[1]}` : '';
-}
